@@ -1,39 +1,29 @@
 package small
 
-import "fmt"
+import "os"
 
-// showReduction shows the steps to reduce an expression.
-func showReduction(e Expression) {
-	for {
-		fmt.Println(e)
-		if !e.Reducible() {
-			fmt.Println("Not Reducible")
-			break
-		}
-		e = e.Reduce()
-	}
-}
+var e Environment = make(map[Variable]Expression)
 
-// Demonstrate reduction
+// Demonstrate reduction.
 func ExampleReduction() {
-	var e Expression = Add{
+	m := &Machine{Add{
 		Multiply{Number{1}, Number{2}},
-		Multiply{Number{3}, Number{4}}}
-	showReduction(e)
+		Multiply{Number{3}, Number{4}}}, e}
+	m.Run(os.Stdout)
 	// Output:
 	// 1 * 2 + 3 * 4
 	// 2 + 3 * 4
 	// 2 + 12
 	// 14
-	// Not Reducible
 }
 
+// Demonstrate booleans.
 func ExampleBoolean() {
-	var e Expression = LessThan{
-		Number{2}, Number{1}}
-	showReduction(e)
+	m := &Machine{LessThan{
+		Number{5}, Add{Number{2}, Number{2}}}, e}
+	m.Run(os.Stdout)
 	// Output:
-	// 2 < 1
+	// 5 < 2 + 2
+	// 5 < 4
 	// false
-	// Not Reducible
 }
