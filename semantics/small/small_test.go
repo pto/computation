@@ -4,8 +4,8 @@ import "os"
 
 var e Environment = make(map[Variable]Expression)
 
-// Demonstrate reduction.
-func ExampleReduction() {
+// Demonstrate reduction of Add and Multiply.
+func ExampleAdd() {
 	m := &Machine{Add{
 		Multiply{Number{1}, Number{2}},
 		Multiply{Number{3}, Number{4}}}, e}
@@ -17,7 +17,7 @@ func ExampleReduction() {
 	// 14
 }
 
-// Demonstrate booleans.
+// Demonstrate reduction of LessThan.
 func ExampleBoolean() {
 	m := &Machine{LessThan{
 		Number{5}, Add{Number{2}, Number{2}}}, e}
