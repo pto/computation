@@ -45,9 +45,9 @@ func ExampleIf_big() {
 func ExampleSequence_big() {
 	e := Environment{}
 	fmt.Println(Sequence{Assign{Variable{"x"}, Add{Number{1}, Number{1}}},
-		Assign{Variable{"y"}, Add{Variable{"x"}, Number{3}}}}.Evaluate(e))
+		Assign{Variable{"x"}, Add{Variable{"x"}, Number{3}}}}.Evaluate(e))
 	// Output:
-	// map[x:2 y:5]
+	// map[x:5]
 }
 
 // Demonstrates a while statement.

@@ -57,16 +57,16 @@ func ExampleIf() {
 func ExampleSequence() {
 	e := Environment{}
 	m := &Machine{Sequence{Assign{Variable{"x"}, Add{Number{1}, Number{1}}},
-		Assign{Variable{"y"}, Add{Variable{"x"}, Number{3}}}}, e}
+		Assign{Variable{"x"}, Add{Variable{"x"}, Number{3}}}}, e}
 	m.Run(os.Stdout)
 	// Output:
-	// x = 1 + 1; y = x + 3 map[]
-	// x = 2; y = x + 3 map[]
-	// do-nothing; y = x + 3 map[x:2]
-	// y = x + 3 map[x:2]
-	// y = 2 + 3 map[x:2]
-	// y = 5 map[x:2]
-	// do-nothing map[x:2 y:5]
+	// x = 1 + 1; x = x + 3 map[]
+	// x = 2; x = x + 3 map[]
+	// do-nothing; x = x + 3 map[x:2]
+	// x = x + 3 map[x:2]
+	// x = 2 + 3 map[x:2]
+	// x = 5 map[x:2]
+	// do-nothing map[x:5]
 }
 
 // Demonstrates a while statement.
