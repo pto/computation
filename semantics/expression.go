@@ -1,5 +1,6 @@
-// Package small implements a simple AST language using small-step semantics.
-package small
+// Package semantics implements a simple AST language using either small-step
+// or big-step semantics.
+package semantics
 
 import (
 	"fmt"
@@ -13,6 +14,7 @@ type Expression interface {
 	String() string
 	Reducible() bool
 	Reduce(Environment) Expression
+	Evaluate(Environment) Expression
 }
 
 // Number represents an integer.
@@ -30,8 +32,13 @@ func (n Number) Reducible() bool {
 	return false
 }
 
-// Reduce on a Number returns itself.
+// Reduce cannot be called on a number.
 func (n Number) Reduce(_ Environment) Expression {
+	panic("Cannot reduce a Number")
+}
+
+// Evaluate on a number returns itself.
+func (n Number) Evaluate(_ Environment) Expression {
 	return n
 }
 
@@ -50,8 +57,13 @@ func (b Boolean) Reducible() bool {
 	return false
 }
 
-// Reduce on a Boolean returns itself.
+// Reduce cannot be called on a boolean.
 func (b Boolean) Reduce(_ Environment) Expression {
+	panic("Cannot reduce a boolean")
+}
+
+// Evaluate on a boolean returns itself.
+func (b Boolean) Evaluate(_ Environment) Expression {
 	return b
 }
 
@@ -82,6 +94,12 @@ func (a Add) Reduce(e Environment) Expression {
 	}
 }
 
+// Evaluate on an Add returns a number
+func (a Add) Evaluate(e Environment) Expression {
+	return Number{a.Left.Evaluate(e).(Number).Value +
+		a.Right.Evaluate(e).(Number).Value}
+}
+
 // Multiply represents a multiplication of two expressions.
 type Multiply struct {
 	Left  Expression
@@ -108,6 +126,12 @@ func (m Multiply) Reduce(e Environment) Expression {
 	} else {
 		return Number{m.Left.(Number).Value * m.Right.(Number).Value}
 	}
+}
+
+// Evaluate on a Multiply returns a number
+func (m Multiply) Evaluate(e Environment) Expression {
+	return Number{m.Left.Evaluate(e).(Number).Value *
+		m.Right.Evaluate(e).(Number).Value}
 }
 
 // LessThan represents the comparision of two expressions.
@@ -145,6 +169,12 @@ func (lt LessThan) Reduce(e Environment) Expression {
 	}
 }
 
+// Evaluate on a LessThan returns a boolean
+func (l LessThan) Evaluate(e Environment) Expression {
+	return Boolean{l.Left.Evaluate(e).(Number).Value <
+		l.Right.Evaluate(e).(Number).Value}
+}
+
 // Variable represents a name referring to an expression.
 type Variable struct {
 	Name string
@@ -162,5 +192,10 @@ func (v Variable) Reducible() bool {
 
 // Reduce on a Variable looks up the Variable's expression.
 func (v Variable) Reduce(e Environment) Expression {
+	return e[v]
+}
+
+// Evaluate on a Variable returns the Variable's expression.
+func (v Variable) Evaluate(e Environment) Expression {
 	return e[v]
 }

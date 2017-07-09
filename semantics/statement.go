@@ -1,10 +1,11 @@
-package small
+package semantics
 
 // Statement represents an instruction that could update the environment.
 type Statement interface {
 	String() string
 	Reducible() bool
 	Reduce(Environment) (Statement, Environment)
+	Evaluate(Environment) Environment
 }
 
 // DoNothing is the no-op statement
@@ -24,6 +25,11 @@ func (d DoNothing) Reducible() bool {
 // Reduce is not allowed on a DoNothing.
 func (d DoNothing) Reduce(_ Environment) (Statement, Environment) {
 	panic("Cannot reduce a DoNothing")
+}
+
+// Evaluate on a DoNothing returns an unchanged environment.
+func (d DoNothing) Evaluate(e Environment) Environment {
+	return e
 }
 
 // Assign represents an assignment statement.
@@ -47,8 +53,14 @@ func (a Assign) Reduce(e Environment) (Statement, Environment) {
 	if a.Exp.Reducible() {
 		return Assign{a.Var, a.Exp.Reduce(e)}, e
 	}
-	e[a.Var] = a.Exp.Reduce(e)
+	e[a.Var] = a.Exp
 	return DoNothing{}, e
+}
+
+// Evaluate on an assignment returns an updated Environment.
+func (a Assign) Evaluate(e Environment) Environment {
+	e[a.Var] = a.Exp.Evaluate(e)
+	return e
 }
 
 // If represents a choice.
@@ -81,6 +93,15 @@ func (i If) Reduce(e Environment) (Statement, Environment) {
 	}
 }
 
+// Evaluate on an If returns the evaluation of one of its statements.
+func (i If) Evaluate(e Environment) Environment {
+	if i.Condition.Evaluate(e).(Boolean).Value {
+		return i.Consequence.Evaluate(e)
+	} else {
+		return i.Alternative.Evaluate(e)
+	}
+}
+
 // Sequence reduces two statements consecutively.
 type Sequence struct {
 	First  Statement
@@ -108,6 +129,12 @@ func (s Sequence) Reduce(e Environment) (Statement, Environment) {
 	}
 }
 
+// Evaluate on a Sequence returns the environment after evalutating both
+// statements.
+func (s Sequence) Evaluate(e Environment) Environment {
+	return s.Second.Evaluate(s.First.Evaluate(e))
+}
+
 // While repeats a statement while a condition is true.
 type While struct {
 	Condition Expression
@@ -127,4 +154,12 @@ func (w While) Reducible() bool {
 // Reduce unrolls one loop of the while statement by turning it into an If.
 func (w While) Reduce(e Environment) (Statement, Environment) {
 	return If{w.Condition, Sequence{w.Body, w}, DoNothing{}}, e
+}
+
+// Evaluate on a While repeats the body based on the condition.
+func (w While) Evaluate(e Environment) Environment {
+	for w.Condition.Evaluate(e).(Boolean).Value {
+		e = w.Body.Evaluate(e)
+	}
+	return e
 }

@@ -1,11 +1,10 @@
-package small
+package semantics
 
 import "os"
 
-var e Environment = make(map[Variable]Expression)
-
 // Demonstrate reduction of Add and Multiply.
 func ExampleAdd() {
+	e := Environment{}
 	m := &ExpressionMachine{Add{
 		Multiply{Number{1}, Number{2}},
 		Multiply{Number{3}, Number{4}}}, e}
@@ -19,6 +18,7 @@ func ExampleAdd() {
 
 // Demonstrate reduction of LessThan.
 func ExampleBoolean() {
+	e := Environment{}
 	m := &ExpressionMachine{LessThan{
 		Number{5}, Add{Number{2}, Number{2}}}, e}
 	m.Run(os.Stdout)
