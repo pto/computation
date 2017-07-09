@@ -3,7 +3,6 @@ package small
 
 import (
 	"fmt"
-	"io"
 )
 
 // Environment maps variables to expressions.
@@ -31,9 +30,9 @@ func (n Number) Reducible() bool {
 	return false
 }
 
-// Reduce cannot be called on a Number and will panic.
+// Reduce on a Number returns itself.
 func (n Number) Reduce(_ Environment) Expression {
-	panic("Cannot reduce a Number")
+	return n
 }
 
 // Boolean represents a boolean value.
@@ -51,9 +50,9 @@ func (b Boolean) Reducible() bool {
 	return false
 }
 
-// Reduce cannot be called on a Boolean and will panic.
+// Reduce on a Boolean returns itself.
 func (b Boolean) Reduce(_ Environment) Expression {
-	panic("Cannot reduce a Boolean")
+	return b
 }
 
 // Add represents an addition of two expressions.
@@ -164,24 +163,4 @@ func (v Variable) Reducible() bool {
 // Reduce on a Variable looks up the Variable's expression.
 func (v Variable) Reduce(e Environment) Expression {
 	return e[v]
-}
-
-// Machine holds an environment and can reduce expressions.
-type Machine struct {
-	Exp Expression
-	Env Environment
-}
-
-// Step performs a single reduction on the Machine's Expression.
-func (m *Machine) Step() {
-	m.Exp = m.Exp.Reduce(m.Env)
-}
-
-// Run performs all possible reductions, sending each step to the writer.
-func (m *Machine) Run(w io.Writer) {
-	for m.Exp.Reducible() {
-		fmt.Fprintln(w, m.Exp)
-		m.Step()
-	}
-	fmt.Fprintln(w, m.Exp)
 }
