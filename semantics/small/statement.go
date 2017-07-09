@@ -50,3 +50,81 @@ func (a Assign) Reduce(e Environment) (Statement, Environment) {
 	e[a.Var] = a.Exp.Reduce(e)
 	return DoNothing{}, e
 }
+
+// If represents a choice.
+type If struct {
+	Condition   Expression
+	Consequence Statement
+	Alternative Statement
+}
+
+// String displays the if statement
+func (i If) String() string {
+	return "if " + i.Condition.String() + " {" + i.Consequence.String() +
+		"} else {" + i.Alternative.String() + "}"
+}
+
+// Reducible is always true for If
+func (i If) Reducible() bool {
+	return true
+}
+
+// Reduce reduces the condition, or replaces it with the result.
+func (i If) Reduce(e Environment) (Statement, Environment) {
+	if i.Condition.Reducible() {
+		return If{i.Condition.Reduce(e), i.Consequence, i.Alternative}, e
+	}
+	if i.Condition.(Boolean).Value {
+		return i.Consequence, e
+	} else {
+		return i.Alternative, e
+	}
+}
+
+// Sequence reduces two statements consecutively.
+type Sequence struct {
+	First  Statement
+	Second Statement
+}
+
+// String displays the statements of the sequence.
+func (s Sequence) String() string {
+	return s.First.String() + "; " + s.Second.String()
+}
+
+// Reducible is always true for a sequence.
+func (s Sequence) Reducible() bool {
+	return true
+}
+
+// Reduce reduces the first statement unless is it DoNothing.
+func (s Sequence) Reduce(e Environment) (Statement, Environment) {
+	switch s.First.(type) {
+	case DoNothing:
+		return s.Second, e
+	default:
+		reducedFirst, newE := s.First.Reduce(e)
+		return Sequence{reducedFirst, s.Second}, newE
+	}
+}
+
+// While repeats a statement while a condition is true.
+type While struct {
+	Condition Expression
+	Body      Statement
+}
+
+// String displays the while construct.
+func (w While) String() string {
+	return "while " + w.Condition.String() + " {" + w.Body.String() + "}"
+}
+
+// Reducible is always true for a while statement.
+func (w While) Reducible() bool {
+	return true
+}
+
+// Reduce unrolls one loop of the while statement by turning it into an If.
+func (w While) Reduce(e Environment) (Statement, Environment) {
+	return If{w.Condition, Sequence{w.Body, w}, DoNothing{}}, e
+}
