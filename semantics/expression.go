@@ -1,5 +1,5 @@
-// Package semantics implements a simple AST language using either small-step
-// or big-step semantics.
+// Package semantics implements a simple AST language using small-step,
+// big-step, or denotational semantics.
 package semantics
 
 import (
@@ -15,6 +15,7 @@ type Expression interface {
 	Reducible() bool
 	Reduce(Environment) Expression
 	Evaluate(Environment) Expression
+	Go() string
 }
 
 // Number represents an integer.
@@ -42,6 +43,11 @@ func (n Number) Evaluate(_ Environment) Expression {
 	return n
 }
 
+// Go returns a function that formats the value.
+func (n Number) Go() string {
+	return "func(_ map[string]string) string {return \"" + n.String() + "\"}"
+}
+
 // Boolean represents a boolean value.
 type Boolean struct {
 	Value bool
@@ -65,6 +71,11 @@ func (b Boolean) Reduce(_ Environment) Expression {
 // Evaluate on a boolean returns itself.
 func (b Boolean) Evaluate(_ Environment) Expression {
 	return b
+}
+
+// Go function formats the value.
+func (b Boolean) Go() string {
+	return "func(_ map[string]string) string { return \"" + b.String() + "\"}"
 }
 
 // Add represents an addition of two expressions.
@@ -100,6 +111,14 @@ func (a Add) Evaluate(e Environment) Expression {
 		a.Right.Evaluate(e).(Number).Value}
 }
 
+// Go on an Add returns a number
+func (a Add) Go() string {
+	result := "l, _ := strconv.Atoi(" + a.Left.Go() + "(e)); " +
+		"r, _ := strconv.Atoi(" + a.Right.Go() + "(e)); " +
+		"return fmt.Sprint(l + r)"
+	return "func(e map[string]string) string { " + result + " }"
+}
+
 // Multiply represents a multiplication of two expressions.
 type Multiply struct {
 	Left  Expression
@@ -132,6 +151,14 @@ func (m Multiply) Reduce(e Environment) Expression {
 func (m Multiply) Evaluate(e Environment) Expression {
 	return Number{m.Left.Evaluate(e).(Number).Value *
 		m.Right.Evaluate(e).(Number).Value}
+}
+
+// Go on a Multiply returns a number
+func (m Multiply) Go() string {
+	result := "l, _ := strconv.Atoi(" + m.Left.Go() + "(e)); " +
+		"r, _ := strconv.Atoi(" + m.Right.Go() + "(e)); " +
+		"return fmt.Sprint(l * r)"
+	return "func(e map[string]string) string { " + result + " }"
 }
 
 // LessThan represents the comparision of two expressions.
@@ -170,9 +197,17 @@ func (lt LessThan) Reduce(e Environment) Expression {
 }
 
 // Evaluate on a LessThan returns a boolean
-func (l LessThan) Evaluate(e Environment) Expression {
-	return Boolean{l.Left.Evaluate(e).(Number).Value <
-		l.Right.Evaluate(e).(Number).Value}
+func (lt LessThan) Evaluate(e Environment) Expression {
+	return Boolean{lt.Left.Evaluate(e).(Number).Value <
+		lt.Right.Evaluate(e).(Number).Value}
+}
+
+// Go on a LessThan returns a boolean
+func (lt LessThan) Go() string {
+	result := "l, _ := strconv.Atoi(" + lt.Left.Go() + "(e)); " +
+		"r, _ := strconv.Atoi(" + lt.Right.Go() + "(e)); " +
+		"return fmt.Sprint(l < r)"
+	return "func(e map[string]string) string { " + result + " }"
 }
 
 // Variable represents a name referring to an expression.
@@ -198,4 +233,9 @@ func (v Variable) Reduce(e Environment) Expression {
 // Evaluate on a Variable returns the Variable's expression.
 func (v Variable) Evaluate(e Environment) Expression {
 	return e[v]
+}
+
+// Go returns a function that retrieves the variable's value.
+func (v Variable) Go() string {
+	return "func(e map[string]string) string { return e[\"" + v.Name + "\"] }"
 }

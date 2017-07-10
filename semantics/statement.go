@@ -88,18 +88,16 @@ func (i If) Reduce(e Environment) (Statement, Environment) {
 	}
 	if i.Condition.(Boolean).Value {
 		return i.Consequence, e
-	} else {
-		return i.Alternative, e
 	}
+	return i.Alternative, e
 }
 
 // Evaluate on an If returns the evaluation of one of its statements.
 func (i If) Evaluate(e Environment) Environment {
 	if i.Condition.Evaluate(e).(Boolean).Value {
 		return i.Consequence.Evaluate(e)
-	} else {
-		return i.Alternative.Evaluate(e)
 	}
+	return i.Alternative.Evaluate(e)
 }
 
 // Sequence reduces two statements consecutively.
