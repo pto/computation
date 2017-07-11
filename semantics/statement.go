@@ -6,6 +6,7 @@ type Statement interface {
 	Reducible() bool
 	Reduce(Environment) (Statement, Environment)
 	Evaluate(Environment) Environment
+	Go() string
 }
 
 // DoNothing is the no-op statement
@@ -30,6 +31,11 @@ func (d DoNothing) Reduce(_ Environment) (Statement, Environment) {
 // Evaluate on a DoNothing returns an unchanged environment.
 func (d DoNothing) Evaluate(e Environment) Environment {
 	return e
+}
+
+// Go on a DoNothing returns the environment map.
+func (d DoNothing) Go() string {
+	return "func(e map[string]string) map[string]string { return e }"
 }
 
 // Assign represents an assignment statement.
@@ -61,6 +67,13 @@ func (a Assign) Reduce(e Environment) (Statement, Environment) {
 func (a Assign) Evaluate(e Environment) Environment {
 	e[a.Var] = a.Exp.Evaluate(e)
 	return e
+}
+
+// Go on an assignment returns the environment with the expression added
+// to the variable.
+func (a Assign) Go() string {
+	return "func(e map[string]string) map[string]string { " +
+		"e[\"" + a.Var.Name + "\"] = " + a.Exp.Go() + "(e); return e }"
 }
 
 // If represents a choice.
@@ -100,6 +113,14 @@ func (i If) Evaluate(e Environment) Environment {
 	return i.Alternative.Evaluate(e)
 }
 
+// Go on an If returns one of the alternatives.
+func (i If) Go() string {
+	return "func(e map[string]string) map[string]string { " +
+		"b, _ := strconv.ParseBool(" + i.Condition.Go() + "(e)); " +
+		"if b { return " + i.Consequence.Go() + "(e) } else { " +
+		i.Alternative.Go() + "(e) } }"
+}
+
 // Sequence reduces two statements consecutively.
 type Sequence struct {
 	First  Statement
@@ -133,6 +154,12 @@ func (s Sequence) Evaluate(e Environment) Environment {
 	return s.Second.Evaluate(s.First.Evaluate(e))
 }
 
+// Go on a Sequence returns the result of both statments.
+func (s Sequence) Go() string {
+	return "func(e map[string]string) map[string]string { " +
+		"return " + s.Second.Go() + "(" + s.First.Go() + "(e)) }"
+}
+
 // While repeats a statement while a condition is true.
 type While struct {
 	Condition Expression
@@ -160,4 +187,12 @@ func (w While) Evaluate(e Environment) Environment {
 		e = w.Body.Evaluate(e)
 	}
 	return e
+}
+
+// Go on a While repeats the body based on the condition.
+func (w While) Go() string {
+	return "func(e map[string]string) map[string]string { " +
+		"b, _ := strconv.ParseBool(" + w.Condition.Go() + "(e)); " +
+		"for b { e = " + w.Body.Go() + "(e); " +
+		"b, _ = strconv.ParseBool(" + w.Condition.Go() + "(e)) } ; return e }"
 }
